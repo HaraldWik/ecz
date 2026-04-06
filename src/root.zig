@@ -128,6 +128,7 @@ pub fn World(comps: []const Component) type {
         }
 
         pub fn addEntityComponent(self: *@This(), entity: Entity, comptime component: Component) !*component.type {
+            comptime verifyComponents(&.{component});
             const array_list: *std.ArrayList(component.type) = &@field(self.layout, @tagName(component.name));
             try array_list.ensureTotalCapacity(self.gpa, self.last_id + 1);
             array_list.items.len = entity.id + 1;
@@ -138,6 +139,7 @@ pub fn World(comps: []const Component) type {
         }
 
         pub fn query(self: *@This(), comptime components: []const Component) QueryIterator(components) {
+            comptime verifyComponents(components);
             return .{ .world = self };
         }
 
@@ -178,6 +180,14 @@ pub fn World(comps: []const Component) type {
                 if (std.meta.eql(comp, component)) return i;
             }
             unreachable;
+        }
+
+        fn verifyComponents(comptime components: []const Component) void {
+            inline for (components) |component| {
+                if (!@hasField(Layout, @tagName(component.name))) {
+                    @compileError("attempted to access unregistered component '" ++ @tagName(component.name) ++ "'");
+                }
+            }
         }
     };
 }
