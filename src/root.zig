@@ -97,12 +97,14 @@ pub fn World(comps: []const Component) type {
         }
 
         pub fn spawnEntity(self: *@This()) !Entity {
-            const despawned_id = self.despawned_ids.pop();
-            const id = despawned_id orelse self.last_id;
-            if (despawned_id == null) self.last_id += 1;
+            const id = if (self.despawned_ids.items.len != 0) self.despawned_ids.pop().? else id: {
+                defer self.last_id += 1;
+                break :id self.last_id;
+            };
 
             try self.signatures.ensureTotalCapacity(self.gpa, id + 1);
-            self.signatures.items.len = id + 1;
+            if (self.signatures.items.len <= id) self.signatures.items.len = id + 1;
+
             const signature = &self.signatures.items[id];
             signature.* = .empty;
 
@@ -110,8 +112,19 @@ pub fn World(comps: []const Component) type {
         }
 
         pub fn despawnEntity(self: *@This(), entity: Entity) !void {
-            try self.despawned_ids.append(self.gpa, entity.id);
             entity.signature.* = .empty;
+
+            if (entity.id + 1 == self.last_id) {
+                self.last_id -= 1;
+
+                while (self.last_id > 0) : (self.last_id -= 1) {
+                    const prev_id = self.last_id - 1;
+                    const index = std.mem.indexOfScalar(Entity.Id, self.despawned_ids.items, prev_id) orelse break;
+                    _ = self.despawned_ids.swapRemove(index);
+                }
+            } else {
+                try self.despawned_ids.append(self.gpa, entity.id);
+            }
         }
 
         pub fn addEntityComponent(self: *@This(), entity: Entity, comptime component: Component) !*component.type {
