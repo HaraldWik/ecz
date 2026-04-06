@@ -135,7 +135,7 @@ pub fn World(comps: []const Component) type {
             comptime verifyComponents(&.{component});
             const array_list: *std.ArrayList(component.type) = &@field(self.layout, @tagName(component.name));
             try array_list.ensureTotalCapacity(self.gpa, self.last_id + 1);
-            array_list.items.len = entity.id + 1;
+            if (array_list.items.len <= entity.id + 1) array_list.items.len = entity.id + 1;
 
             entity.signature.bit_set.setValue(componentSignatureIndex(component), true);
 
