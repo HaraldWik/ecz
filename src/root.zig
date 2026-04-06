@@ -107,7 +107,7 @@ pub fn World(comps: []const Component) type {
             };
 
             try self.signatures.ensureTotalCapacity(self.gpa, id + 1);
-            if (self.signatures.items.len <= id) self.signatures.items.len = id + 1;
+            if (self.signatures.items.len <= id + 1) self.signatures.items.len = id + 1;
 
             const signature = &self.signatures.items[id];
             signature.* = .empty;
