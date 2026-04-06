@@ -49,12 +49,7 @@ pub fn World(comps: []const Component) type {
             };
 
             pub fn fromId(world: *ActualWorld, id: Entity.Id) Entity {
-                assert(id <= world.last_id);
-                return .{
-                    .world = world,
-                    .id = id,
-                    .signature = &world.signatures.items[id],
-                };
+                return world.entityFromId(id);
             }
 
             pub fn despawn(self: @This()) !void {
@@ -94,6 +89,15 @@ pub fn World(comps: []const Component) type {
             inline for (std.meta.fields(Layout)) |field| {
                 @field(self.layout, field.name).deinit(self.gpa);
             }
+        }
+
+        pub fn entityFromId(self: *@This(), id: Entity.Id) Entity {
+            assert(id <= self.last_id);
+            return .{
+                .world = self,
+                .id = id,
+                .signature = &self.signatures.items[id],
+            };
         }
 
         pub fn spawnEntity(self: *@This()) !Entity {
